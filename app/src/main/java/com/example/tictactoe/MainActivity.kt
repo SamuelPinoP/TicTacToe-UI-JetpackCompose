@@ -25,14 +25,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tictactoe.ui.theme.TicTacToeTheme
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
-// Win Highlighting
-//Highlight the winning row, column, or diagonal when a player wins.
-//Change the button background color for winning tiles.
+
+// Highlight the winning row, column, or diagonal when a player wins.
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,12 +49,54 @@ class MainActivity : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFFE0F7FA)
+                    // color = MaterialTheme.colorScheme.background
                 ) {
                     TicTacBoard()
                 }
             }
         }
+    }
+}
+@Composable
+fun DrawCross(modifier: Modifier = Modifier, color: Color = Color.Red) {
+    Canvas(modifier = modifier.size(30.dp)) {
+        val strokeWidth = 10f
+        val topLeft = Offset(0f, 0f)
+        val bottomRight = Offset(size.width, size.height)
+        val topRight = Offset(size.width, 0f)
+        val bottomLeft = Offset(0f, size.height)
+
+        drawLine(
+            color = color,
+            start = topLeft,
+            end = bottomRight,
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+
+        drawLine(
+            color = color,
+            start = topRight,
+            end = bottomLeft,
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+    }
+}
+
+
+@Composable
+fun DrawCircle(modifier: Modifier = Modifier, color: Color = Color.Blue) {
+    Canvas(modifier = modifier.size(70.dp)) {
+        val strokeWidth = 10f
+        val radius = size.minDimension / 2 - strokeWidth / 2
+
+        drawCircle(
+            color = color,
+            radius = radius,
+            style = Stroke(width = strokeWidth)
+        )
     }
 }
 
@@ -59,13 +108,49 @@ fun TicTacBoard() {
     val buttons = remember { mutableStateOf(List(3) { MutableList(3) { "" } }) }
     val gameOver = remember { mutableStateOf(false) }
     val history = remember { mutableStateOf<List<List<MutableList<String>>>>(emptyList()) }
+    var isAI = remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    LaunchedEffect(key1 = isAI.value, key2 = currentPlayer.value, key3 = gameOver.value) {
+        if (isAI.value && currentPlayer.value == "Player 2" && !gameOver.value) {
+            delay(500) // Simulate AI "thinking"
+
+            val emptyCells = mutableListOf<Pair<Int, Int>>()
+            for (row in 0 until 3) {
+                for (col in 0 until 3) {
+                    if (buttons.value[row][col].isEmpty()) {
+                        emptyCells.add(row to col)
+                    }
+                }
+            }
+
+            if (emptyCells.isNotEmpty()) {
+                val (row, col) = emptyCells.random()
+                buttons.value[row][col] = "X"
+                currentPlayer.value = "Player 1"
+                playerTurn.value = "${currentPlayer.value} Turn"
+
+                if ((buttons.value[0][0] == buttons.value[0][1] && buttons.value[0][1] == buttons.value[0][2] && buttons.value[0][0].isNotEmpty()) ||
+                    (buttons.value[1][0] == buttons.value[1][1] && buttons.value[1][1] == buttons.value[1][2] && buttons.value[1][0].isNotEmpty()) ||
+                    (buttons.value[2][0] == buttons.value[2][1] && buttons.value[2][1] == buttons.value[2][2] && buttons.value[2][0].isNotEmpty()) ||
+                    (buttons.value[0][0] == buttons.value[1][0] && buttons.value[1][0] == buttons.value[2][0] && buttons.value[0][0].isNotEmpty()) ||
+                    (buttons.value[0][1] == buttons.value[1][1] && buttons.value[1][1] == buttons.value[2][1] && buttons.value[0][1].isNotEmpty()) ||
+                    (buttons.value[0][2] == buttons.value[1][2] && buttons.value[1][2] == buttons.value[2][2] && buttons.value[0][2].isNotEmpty()) ||
+                    (buttons.value[0][0] == buttons.value[1][1] && buttons.value[1][1] == buttons.value[2][2] && buttons.value[0][0].isNotEmpty()) ||
+                    (buttons.value[2][0] == buttons.value[1][1] && buttons.value[1][1] == buttons.value[0][2] && buttons.value[2][0].isNotEmpty())) {
+
+                    gameOver.value = true // Set game over state to true
+                    Toast.makeText(context, "AI is the winnner!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     fun saveState() {
         history.value = history.value + listOf(buttons.value.map { it.toMutableList() })
     }
 
 
-    // Function to reset the game
     fun resetGame() {
         buttons.value = List(3) { MutableList(3) { "" } }
         currentPlayer.value = "Player 1"
@@ -73,21 +158,20 @@ fun TicTacBoard() {
         gameOver.value = false
     }
 
-    // Function to undo the last move
+
     fun undo() {
-        if (history.value.isNotEmpty()) {
-            // Remove the last move from history
+        if (isAI.value == true){
+            Toast.makeText(context, "Cannot undo against AI!", Toast.LENGTH_SHORT).show()
+        }
+        if (history.value.isNotEmpty() && isAI.value == false){
             val lastState = history.value.last()
             history.value = history.value.dropLast(1)
 
-            // Restore the board to the previous state
             buttons.value = lastState.map { it.toMutableList() }
 
-            // Switch back to the previous player correctly
             currentPlayer.value = if (currentPlayer.value == "Player 1") "Player 2" else "Player 1"
             playerTurn.value = "${currentPlayer.value} Turn"
 
-            // Ensure game is still playable
             gameOver.value = false
         }
     }
@@ -97,7 +181,12 @@ fun TicTacBoard() {
 
         saveState()
 
+        if (isAI.value == true && currentPlayer.value == "Player 2"){
+            return
+        }
+
         if (buttons.value[row][col].isEmpty()) {
+
             buttons.value[row][col] = if (currentPlayer.value == "Player 1") "0" else "X"
             currentPlayer.value = if (currentPlayer.value == "Player 1") "Player 2" else "Player 1"
             playerTurn.value = "${currentPlayer.value} Turn"
@@ -136,34 +225,42 @@ fun TicTacBoard() {
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween // Places buttons at Start, Center, and End
         ) {
-            Button(onClick = {resetGame() },
-                colors = ButtonDefaults.buttonColors(Color.Red), // Set the background color
-                shape = MaterialTheme.shapes.small, // Set the button shape (rounded corners)
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp), // Set the button elevation for shadow
+            Button(
+                onClick = {
+                    resetGame()
+                    isAI.value = false
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = if (isAI.value == false) Color.Green else Color.Red),
+                shape = MaterialTheme.shapes.small,
+                elevation = ButtonDefaults.elevatedButtonElevation(8.dp),
                 modifier = Modifier.padding(16.dp),
             ) {
-                Text("PvP");
+                Text("PvP", style = TextStyle(fontSize = 25.sp))
             }
-            Button(onClick = {resetGame() },
-                colors = ButtonDefaults.buttonColors(Color.Blue), // Set the background color
-                shape = MaterialTheme.shapes.small, // Set the button shape (rounded corners)
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp), // Set the button elevation for shadow
+            Button(
+                onClick = {
+                    resetGame()
+                    isAI.value = true
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = if (isAI.value) Color.Green else Color.Blue),
+                shape = MaterialTheme.shapes.small,
+                elevation = ButtonDefaults.elevatedButtonElevation(8.dp),
                 modifier = Modifier.padding(16.dp),
             ) {
-                Text("AI");
+                Text("AI", style = TextStyle(fontSize = 25.sp))
             }
             Button(
                 onClick = {
                     (context as? ComponentActivity)?.finish()
                 },
-                colors = ButtonDefaults.buttonColors(Color.Black), // Set the background color
-                shape = MaterialTheme.shapes.small, // Set the button shape (rounded corners)
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp), // Set the button elevation for shadow
+                colors = ButtonDefaults.buttonColors(Color.Black),
+                shape = MaterialTheme.shapes.small,
+                elevation = ButtonDefaults.elevatedButtonElevation(8.dp),
                 modifier = Modifier.padding(16.dp),
 
                 ) {
 
-                Text("X", color = Color.White, style = TextStyle(fontSize = 30.sp))
+                Text("X", color = Color.White, style = TextStyle(fontSize = 25.sp))
             }
         }
 
@@ -199,7 +296,7 @@ fun TicTacBoard() {
                                     .padding(4.dp)
                                     .width(80.dp)
                                     .height(80.dp),
-                                enabled = !gameOver.value,
+                                enabled = buttons.value[rowIndex][colIndex].isEmpty() && !gameOver.value,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.White,
                                     contentColor = Color.Red
@@ -207,10 +304,10 @@ fun TicTacBoard() {
                                 shape = MaterialTheme.shapes.medium
                             ) {
                                 // Display "X" or "O" as text
-                                Text(
-                                    text = buttons.value[rowIndex][colIndex],
-                                    style = TextStyle(fontSize = 24.sp)
-                                )
+                                when (buttons.value[rowIndex][colIndex]) {
+                                    "0" -> DrawCircle(color = Color.Blue) // Draw "O"
+                                    "X" -> DrawCross(color = Color.Red) // Draw "X"
+                                }
                             }
                         }
                     }
