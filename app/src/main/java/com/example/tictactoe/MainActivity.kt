@@ -1,5 +1,11 @@
 package com.example.tictactoe
 
+import android.os.CountDownTimer
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -28,19 +34,29 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tictactoe.ui.theme.TicTacToeTheme
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 
 // Highlight the winning row, column, or diagonal when a player wins.
-
-
+// Create a first activity with 2 Buttons. AI and PvP which start the game in AI or PvP mode.
+// I am not stopping the timer after a someone wins
+// Improve visuals such as Time left text
+// Add code in a separate file
+// Better Timer Display: Make the timer change color when time is running low (e.g., red when <10 seconds)
+// Draw Detection: Currently you only detect wins, but not draws when the board is full
+// Sound Effects: Add subtle sounds for moves, wins, and timer warnings
+// Theme Options: Light/dark mode or color theme selection
+/*
+// After checking for wins, check for draw
+val isDraw = buttons.value.all { row -> row.all { it.isNotEmpty() } }
+if (isDraw && !gameOver.value) {
+    gameOver.value = true
+    Toast.makeText(context, "It's a draw!", Toast.LENGTH_SHORT).show()
+}
+*/
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,50 +74,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable
-fun DrawCross(modifier: Modifier = Modifier, color: Color = Color.Red) {
-    Canvas(modifier = modifier.size(30.dp)) {
-        val strokeWidth = 10f
-        val topLeft = Offset(0f, 0f)
-        val bottomRight = Offset(size.width, size.height)
-        val topRight = Offset(size.width, 0f)
-        val bottomLeft = Offset(0f, size.height)
-
-        drawLine(
-            color = color,
-            start = topLeft,
-            end = bottomRight,
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round
-        )
-
-        drawLine(
-            color = color,
-            start = topRight,
-            end = bottomLeft,
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round
-        )
-    }
-}
-
-
-@Composable
-fun DrawCircle(modifier: Modifier = Modifier, color: Color = Color.Blue) {
-    Canvas(modifier = modifier.size(70.dp)) {
-        val strokeWidth = 10f
-        val radius = size.minDimension / 2 - strokeWidth / 2
-
-        drawCircle(
-            color = color,
-            radius = radius,
-            style = Stroke(width = strokeWidth)
-        )
-    }
-}
 
 @Composable
 fun TicTacBoard() {
+    var timeLeft by remember { mutableStateOf(30) }
+    var isRunning by remember { mutableStateOf(false) }
 
     var currentPlayer = remember { mutableStateOf("Player 1") }
     val playerTurn = remember { mutableStateOf("${currentPlayer.value} Turn") }
@@ -110,11 +87,48 @@ fun TicTacBoard() {
     val history = remember { mutableStateOf<List<List<MutableList<String>>>>(emptyList()) }
     var isAI = remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val timer = remember {
+        object : CountDownTimer(30000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                timeLeft = (millisUntilFinished / 1000).toInt()
+            }
+
+            override fun onFinish() {
+                timeLeft = 0
+                isRunning = false
+                Toast.makeText(context, "Time's up!", Toast.LENGTH_SHORT).show()
+                if(timeLeft == 0 && !isAI.value) {
+                    gameOver.value = true
+                    if (currentPlayer.value == "Player 1") {
+                        Toast.makeText(context, "Player 2 is the winner!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Player 1 is the winner!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                else if(timeLeft == 0 && isAI.value) {
+                    gameOver.value = true
+                    Toast.makeText(context, "AI is the winner!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    fun startTimer() {
+        if(gameOver.value == false) {
+            timer.start()
+            isRunning = true
+        }
+        else{
+            timer.cancel()
+            isRunning = false
+            timeLeft = 30
+        }
+    }
 
     LaunchedEffect(key1 = isAI.value, key2 = currentPlayer.value, key3 = gameOver.value) {
         if (isAI.value && currentPlayer.value == "Player 2" && !gameOver.value) {
             delay(500) // Simulate AI "thinking"
-
+            startTimer()
             val emptyCells = mutableListOf<Pair<Int, Int>>()
             for (row in 0 until 3) {
                 for (col in 0 until 3) {
@@ -156,6 +170,7 @@ fun TicTacBoard() {
         currentPlayer.value = "Player 1"
         playerTurn.value = "${currentPlayer.value} Turn"
         gameOver.value = false
+        startTimer()
     }
 
 
@@ -174,6 +189,7 @@ fun TicTacBoard() {
 
             gameOver.value = false
         }
+        startTimer()
     }
 
     fun onButtonClick(row: Int, col: Int, context: Context) {
@@ -181,7 +197,11 @@ fun TicTacBoard() {
 
         saveState()
 
-        if (isAI.value == true && currentPlayer.value == "Player 2"){
+        if (isAI.value == false){
+            startTimer()
+        }
+
+        if (isAI.value && currentPlayer.value == "Player 2"){
             return
         }
 
@@ -268,11 +288,15 @@ fun TicTacBoard() {
 
         Text("Tic Tac Toe", color = Color.Blue, style = TextStyle(fontSize = 30.sp))
 
-        Spacer(modifier = Modifier.height(50.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(text = "Time Left: $timeLeft", fontSize = 38.sp)
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(playerTurn.value, style = TextStyle(fontSize = 24.sp))
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(23.dp))
 
         Card(
             modifier = Modifier.padding(16.dp),
