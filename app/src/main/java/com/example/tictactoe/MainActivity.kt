@@ -42,9 +42,7 @@ import kotlinx.coroutines.delay
 
 // Highlight the winning row, column, or diagonal when a player wins.
 // Create a first activity with 2 Buttons. AI and PvP which start the game in AI or PvP mode.
-// I am not stopping the timer after a someone wins
 // Improve visuals such as Time left text
-// Add code in a separate file
 // Better Timer Display: Make the timer change color when time is running low (e.g., red when <10 seconds)
 // Draw Detection: Currently you only detect wins, but not draws when the board is full
 // Sound Effects: Add subtle sounds for moves, wins, and timer warnings
@@ -94,6 +92,9 @@ fun TicTacBoard() {
             }
 
             override fun onFinish() {
+                if (gameOver.value){
+                    isRunning = false;
+                }
                 timeLeft = 0
                 isRunning = false
                 Toast.makeText(context, "Time's up!", Toast.LENGTH_SHORT).show()
@@ -155,6 +156,7 @@ fun TicTacBoard() {
 
                     gameOver.value = true // Set game over state to true
                     Toast.makeText(context, "AI is the winnner!", Toast.LENGTH_SHORT).show()
+                    timer.cancel()
                 }
             }
         }
@@ -229,6 +231,7 @@ fun TicTacBoard() {
                 else{
                     Toast.makeText(context, "Player 1 is the winnner!", Toast.LENGTH_SHORT).show()
                 }
+                timer.cancel()
             }
         }
     }
