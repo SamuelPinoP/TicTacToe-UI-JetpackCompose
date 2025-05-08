@@ -32,6 +32,7 @@ import com.example.tictactoe.ui.theme.TicTacToeTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import kotlinx.coroutines.delay
 
@@ -365,12 +366,18 @@ fun TicTacBoard() {
                     resetGame()
                     isAI.value = false
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = if (isAI.value == false) Color.Green else Color.Red),
-                shape = MaterialTheme.shapes.small,
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp),
-                modifier = Modifier.padding(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isAI.value == false) Color(0xFF2E7D32) else Color(0xFF616161),
+                    contentColor = Color.White
+                ),
+                shape = MaterialTheme.shapes.medium,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                ),
+                modifier = Modifier.padding(16.dp)
             ) {
-                Text("PvP", style = TextStyle(fontSize = 25.sp))
+                Text("PvP", style = TextStyle(fontSize = 25.sp, fontWeight = FontWeight.Medium))
             }
 
             // AI mode button
@@ -379,13 +386,24 @@ fun TicTacBoard() {
                     resetGame()
                     isAI.value = true
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = if (isAI.value) Color.Green else Color.Blue),
-                shape = MaterialTheme.shapes.small,
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp),
-                modifier = Modifier.padding(16.dp),
-            ) {
-                Text("AI", style = TextStyle(fontSize = 25.sp))
-            }
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isAI.value) Color(0xFF2E7D32) else Color(0xFF616161),
+                    contentColor = Color.White
+                ),
+                shape = MaterialTheme.shapes.medium,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                ),
+                modifier = Modifier.padding(16.dp)
+            ){
+                    Text("AI",
+                        style = TextStyle(
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                 }
 
             // Exit button
             Button(
@@ -404,7 +422,11 @@ fun TicTacBoard() {
         Spacer(modifier = Modifier.height(26.dp))
 
         // Game title
-        Text("Tic Tac Toe", color = Color.Blue, style = TextStyle(fontSize = 30.sp))
+        Text(
+            "Tic Tac Toe",
+            color = Color(0xFF2F4F4F),  // Dark slate gray
+            style = TextStyle(fontSize = 30.sp)
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
