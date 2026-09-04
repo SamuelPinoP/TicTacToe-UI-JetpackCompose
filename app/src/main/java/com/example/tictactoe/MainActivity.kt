@@ -542,8 +542,8 @@ private fun statusTitle(state: GameState): String = when (val outcome = state.ou
     }
 
     GameOutcome.Draw -> "Round draw"
-    is GameOutcome.Forfeit -> "${outcome.winner.playerLabel(state)} wins on time"
-    is GameOutcome.Win -> "${outcome.winner.playerLabel(state)} wins"
+    is GameOutcome.Forfeit -> outcome.winner.winTitle(state, " on time")
+    is GameOutcome.Win -> outcome.winner.winTitle(state)
 }
 
 private fun statusDetail(state: GameState): String = when (val outcome = state.outcome) {
@@ -593,6 +593,12 @@ private fun Mark.scoreLabel(state: GameState): String = when (state.mode) {
         Mark.O -> "AI"
         Mark.Empty -> "Open"
     }
+}
+
+private fun Mark.winTitle(state: GameState, suffix: String = ""): String {
+    val label = playerLabel(state)
+    val verb = if (label == "You") "win" else "wins"
+    return "$label $verb$suffix"
 }
 
 private fun cellDescription(mark: Mark, move: Move): String {

@@ -21,11 +21,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            applicationIdSuffix = ".interview"
-            versionNameSuffix = "-interview"
-        }
-
         release {
             isMinifyEnabled = false
             proguardFiles(
